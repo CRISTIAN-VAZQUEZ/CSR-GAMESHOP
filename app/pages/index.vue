@@ -6,8 +6,17 @@ const { data: db, refresh, pending } = await useFetch('/api/tienda');
 
 // 2. LÓGICA DE ACCESO
 const entrarAlSitio = () => {
-  if (!db.value) return;
-  const u = db.value.usuarios?.find(x => x.user === loginData.value.user && x.pass === loginData.value.pass);
+  // Si db.value aún no carga, esperamos o avisamos
+  if (!db.value || !db.value.usuarios) {
+    alert("Cargando base de datos... intenta de nuevo en un segundo.");
+    return;
+  }
+
+  const u = db.value.usuarios.find(x => 
+    x.user === loginData.value.user && 
+    x.pass === loginData.value.pass
+  );
+
   if (u) {
     auth.value = { logged: true, user: u.user, role: u.role };
   } else {

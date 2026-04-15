@@ -8,7 +8,7 @@
     {
       "user": "invitado",
       "pass": "abc",
-      "role": "user"
+      "role    ": "user"
     }
   ],
   "juegos": [
