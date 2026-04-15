@@ -1,0 +1,65 @@
+{
+  "usuarios": [
+    {
+      "user": "admin",
+      "pass": "123",
+      "role": "admin"
+    },
+    {
+      "user": "invitado",
+      "pass": "abc",
+      "role": "user"
+    }
+  ],
+  "juegos": [
+    {
+      "id": 540,
+      "titulo": "Overwatch",
+      "precio": 1166,
+      "imagen": "https://www.freetogame.com/g/540/thumbnail.jpg"
+    },
+    {
+      "id": 516,
+      "titulo": "PUBG: BATTLEGROUNDS",
+      "precio": 666,
+      "imagen": "https://www.freetogame.com/g/516/thumbnail.jpg"
+    },
+    {
+      "id": 508,
+      "titulo": "Enlisted",
+      "precio": 587,
+      "imagen": "https://www.freetogame.com/g/508/thumbnail.jpg"
+    },
+    {
+      "id": 604,
+      "titulo": "FragPunk",
+      "precio": 793,
+      "imagen": "https://www.freetogame.com/g/604/thumbnail.jpg"
+    },
+    {
+      "id": 590,
+      "titulo": "Throne And Liberty",
+      "precio": 722,
+      "imagen": "https://www.freetogame.com/g/590/thumbnail.jpg"
+    },
+    {
+      "id": 523,
+      "titulo": "Fall Guys",
+      "precio": 663,
+      "imagen": "https://www.freetogame.com/g/523/thumbnail.jpg"
+    },
+    {
+      "id": 11,
+      "titulo": "Neverwinter",
+      "precio": 812,
+      "imagen": "https://www.freetogame.com/g/11/thumbnail.jpg"
+    },
+    {
+      "id": 517,
+      "titulo": "Lost Ark",
+      "precio": 615,
+      "imagen": "https://www.freetogame.com/g/517/thumbnail.jpg"
+    }
+  ],
+  "ventas": []
+}
