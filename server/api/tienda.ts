@@ -1,22 +1,29 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+// Variable global para mantener los datos en la memoria del servidor (crucial para Vercel)
+let memoryDb: any = null;
+
 export default defineEventHandler(async (event) => {
   const dbPath = path.join(process.cwd(), 'server', 'db.json')
   const method = event.method
 
   const readDB = () => {
+    // Si ya cargamos datos en esta sesión, los usamos de la memoria
+    if (memoryDb) return memoryDb;
+
     try {
-      // Intentamos leer el archivo si existe
       if (fs.existsSync(dbPath)) {
         const data = fs.readFileSync(dbPath, 'utf-8')
-        return JSON.parse(data)
+        memoryDb = JSON.parse(data)
+        return memoryDb
       }
     } catch (e) {
-      console.error("Error leyendo DB, usando datos por defecto")
+      console.error("Error leyendo disco, inicializando memoria por defecto")
     }
-    // Si falla o no existe, devolvemos los datos base para que el login no falle
-    return { 
+
+    // Datos de respaldo si el archivo no existe o no se puede leer
+    memoryDb = { 
       usuarios: [
         { user: "admin", pass: "123", role: "admin" },
         { user: "invitado", pass: "abc", role: "user" }
@@ -24,23 +31,27 @@ export default defineEventHandler(async (event) => {
       juegos: [], 
       ventas: [] 
     }
+    return memoryDb
   }
 
   const writeDB = (data: any) => {
+    memoryDb = data; // Guardamos en memoria siempre
     try {
-      // Vercel dará error aquí, por eso usamos try/catch para que la app siga viva
+      // Intentamos escribir en disco (solo funcionará en tu PC local)
       fs.writeFileSync(dbPath, JSON.stringify(data, null, 2))
     } catch (e) {
-      console.warn("Escritura no permitida en Vercel (Temporal)")
+      // En Vercel fallará silenciosamente, pero la app seguirá funcionando con memoryDb
     }
   }
 
   const db = readDB()
+
   if (method === 'GET') return db
 
   if (method === 'POST') {
     const body = await readBody(event)
     
+    // CASO 1: Traer juegos de API externa
     if (body.type === 'fetch-external') {
       try {
         const externalData: any = await $fetch('https://www.freetogame.com/api/games?platform=pc')
@@ -50,18 +61,22 @@ export default defineEventHandler(async (event) => {
           precio: Math.floor(Math.random() * (1200 - 400) + 400),
           imagen: g.thumbnail
         }))
-        db.juegos = [...db.juegos, ...nuevos]
+        
+        // Actualizamos la lista de juegos
+        db.juegos = [...(db.juegos || []), ...nuevos]
         writeDB(db)
         return { status: 'ok' }
       } catch (err) {
-        throw createError({ statusCode: 500, statusMessage: 'Error API externa' })
+        throw createError({ statusCode: 500, statusMessage: 'Error conectando con API externa' })
       }
     }
 
+    // CASO 2: Agregar un juego manualmente
     if (body.type === 'juego') {
       db.juegos.push({ ...body.data, id: Date.now() })
     } 
     
+    // CASO 3: Registrar una venta
     if (body.type === 'venta') {
       db.ventas = db.ventas || []
       db.ventas.push(body.data)
@@ -73,7 +88,7 @@ export default defineEventHandler(async (event) => {
 
   if (method === 'DELETE') {
     const { id } = await readBody(event)
-    db.juegos = db.juegos.filter((j: any) => j.id !== id)
+    db.juegos = (db.juegos || []).filter((j: any) => j.id !== id)
     writeDB(db)
     return { status: 'eliminado' }
   }

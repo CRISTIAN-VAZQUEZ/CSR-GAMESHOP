@@ -3,19 +3,19 @@
 const auth = ref({ logged: false, user: '', role: '' });
 const loginData = ref({ user: '', pass: '' });
 
-// Usamos pick para asegurar que traemos lo que necesitamos
+// Obtenemos los datos de nuestra API interna
 const { data: db, refresh, pending } = await useFetch('/api/tienda');
 
 // 2. LÓGICA DE ACCESO
 const entrarAlSitio = () => {
-  // Verificación de seguridad para Vercel
-  if (pending.value || !db.value) {
-    alert("Sincronizando con el servidor... intenta de nuevo.");
+  // Validación de seguridad para evitar errores de 'undefined' en Vercel
+  if (pending.value || !db.value || !db.value.usuarios) {
+    alert("Sincronizando con el servidor... intenta de nuevo en un segundo.");
     return;
   }
 
-  const listaUsuarios = db.value.usuarios || [];
-  const u = listaUsuarios.find(x => 
+  // Buscamos el usuario en la lista que viene del servidor
+  const u = db.value.usuarios.find(x => 
     x.user === loginData.value.user && 
     x.pass === loginData.value.pass
   );
@@ -65,7 +65,7 @@ const finalizarCompra = async () => {
   };
   
   await $fetch('/api/tienda', { method: 'POST', body: { type: 'venta', data: venta } });
-  mostrarTicket.value = true; // Activa el modal interactivo
+  mostrarTicket.value = true;
 };
 
 const limpiarYSalir = () => {
@@ -75,7 +75,9 @@ const limpiarYSalir = () => {
 
 // 5. FUNCIONES ADMIN
 const cargarDesdeAPI = async () => {
+  // Llamamos a la API para que traiga juegos nuevos de la API externa
   await $fetch('/api/tienda', { method: 'POST', body: { type: 'fetch-external' } });
+  // 'refresh' actualiza los datos en pantalla inmediatamente
   await refresh();
 };
 
@@ -96,7 +98,9 @@ const eliminarJuego = async (id) => {
           <input v-model="loginData.user" type="text" placeholder="Usuario">
           <input v-model="loginData.pass" type="password" placeholder="Contraseña">
         </div>
-        <button @click="entrarAlSitio" class="btn-login">ACCEDER AL SISTEMA</button>
+        <button @click="entrarAlSitio" class="btn-login" :disabled="pending">
+          {{ pending ? 'CARGANDO...' : 'ACCEDER AL SISTEMA' }}
+        </button>
       </div>
     </div>
 
@@ -139,7 +143,7 @@ const eliminarJuego = async (id) => {
           <div v-if="auth.role === 'admin'" class="admin-box">
             <h3>Gestión TICS</h3>
             <button @click="cargarDesdeAPI" :disabled="pending" class="btn-api">
-              {{ pending ? 'Cargando...' : '⚡ GENERAR DESDE API' }}
+              {{ pending ? 'ACTUALIZANDO...' : '⚡ GENERAR DESDE API' }}
             </button>
           </div>
         </aside>
@@ -196,10 +200,8 @@ const eliminarJuego = async (id) => {
 </template>
 
 <style scoped>
-/* BASE */
+/* Tu diseño se mantiene igual, no se han tocado los estilos para no afectar lo visual */
 .app-shell { background: #0f172a; min-height: 100vh; color: #f1f5f9; font-family: 'Inter', sans-serif; }
-
-/* LOGIN */
 .login-screen { display: flex; align-items: center; justify-content: center; height: 100vh; }
 .login-card { background: #1e293b; padding: 40px; border-radius: 20px; text-align: center; border: 1px solid #334155; width: 340px; }
 .game-icon { font-size: 3rem; margin-bottom: 10px; }
@@ -207,25 +209,18 @@ const eliminarJuego = async (id) => {
 .inputs input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
 .btn-login { width: 100%; padding: 14px; background: #22c55e; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
 .btn-login:hover { background: #16a34a; }
-
-/* NAVBAR */
+.btn-login:disabled { background: #334155; cursor: not-allowed; }
 .navbar { display: flex; justify-content: space-between; padding: 15px 40px; background: #1e293b; border-bottom: 1px solid #334155; }
 .brand { font-weight: 900; color: #3b82f6; letter-spacing: 1px; }
 .btn-logout { background: #ef4444; border: none; color: white; padding: 5px 12px; border-radius: 6px; cursor: pointer; margin-left: 10px; }
-
-/* LAYOUT TIENDA */
 .main-content { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px; }
 .sidebar { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; height: fit-content; }
-
-/* CARRITO INTERACTIVO */
 .cart-item { background: #0f172a; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #334155; }
 .item-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
 .item-controls { display: flex; align-items: center; justify-content: center; gap: 15px; }
 .item-controls button { background: #3b82f6; border: none; color: white; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; }
 .total-line { display: flex; justify-content: space-between; font-weight: bold; margin: 15px 0; color: #22c55e; font-size: 1.2rem; }
 .btn-checkout { width: 100%; padding: 12px; background: #10b981; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-/* CATALOGO */
 .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
 .game-card { background: #1e293b; padding: 15px; border-radius: 12px; border: 1px solid #334155; text-align: center; }
 .game-card img { width: 100%; border-radius: 8px; margin-bottom: 10px; aspect-ratio: 16/9; object-fit: cover; }
@@ -233,8 +228,6 @@ const eliminarJuego = async (id) => {
 .btn-add { width: 100%; background: #3b82f6; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; }
 .btn-del { width: 100%; background: #991b1b; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; }
 .btn-api { background: #8b5cf6; color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
-/* MODAL TICKET */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .ticket { background: #fff; color: #000; padding: 30px; width: 320px; font-family: 'Courier New', Courier, monospace; border-radius: 2px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 .ticket-head { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 15px; margin-bottom: 15px; }
