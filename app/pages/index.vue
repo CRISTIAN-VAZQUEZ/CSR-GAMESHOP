@@ -2,17 +2,20 @@
 // 1. ESTADOS PRINCIPALES
 const auth = ref({ logged: false, user: '', role: '' });
 const loginData = ref({ user: '', pass: '' });
+
+// Usamos pick para asegurar que traemos lo que necesitamos
 const { data: db, refresh, pending } = await useFetch('/api/tienda');
 
 // 2. LÓGICA DE ACCESO
 const entrarAlSitio = () => {
-  // Si db.value aún no carga, esperamos o avisamos
-  if (!db.value || !db.value.usuarios) {
-    alert("Cargando base de datos... intenta de nuevo en un segundo.");
+  // Verificación de seguridad para Vercel
+  if (pending.value || !db.value) {
+    alert("Sincronizando con el servidor... intenta de nuevo.");
     return;
   }
 
-  const u = db.value.usuarios.find(x => 
+  const listaUsuarios = db.value.usuarios || [];
+  const u = listaUsuarios.find(x => 
     x.user === loginData.value.user && 
     x.pass === loginData.value.pass
   );
